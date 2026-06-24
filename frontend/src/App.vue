@@ -71,7 +71,6 @@ async function handleFileUpload(file: File) {
     layerName.value = file.name
     layerVisible.value = true
     layerOpacity.value = 1
-    initStyleConfig(geojson.value)
   } catch (error) {
     snackbarMessage.value = error instanceof Error ? error.message : 'Upload failed'
     snackbar.value = true
