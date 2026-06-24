@@ -1,0 +1,19 @@
+{
+  "name": "csv-map-backend",
+  "version": "1.0.0",
+  "description": "Fastify API for CSV to GeoJSON conversion",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/multipart": "^10.0.0",
+    "fastify": "^5.8.5"
+  }
+}
