@@ -11,8 +11,18 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
 import { fromLonLat } from 'ol/proj'
 import type { GeoJSONFeatureCollection } from '../types/geojson'
 import type { StyleConfig } from '../types/style'
+import type { SelectedFeature } from '../types/feature'
 import { getIntervalColor } from '../utils/colorScale'
+import type { MapBrowserEvent } from 'ol'
+import type Feature from 'ol/Feature'
+import type { Geometry } from 'ol/geom'
+import type { EventsKey } from 'ol/events'
+import { listen, unlistenByKey } from 'ol/events'
 import 'ol/ol.css'
+
+const emit = defineEmits<{
+  'feature-select': [feature: SelectedFeature | null]
+}>()
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +40,7 @@ const props = withDefaults(
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: Map | null = null
 let vectorLayer: VectorLayer<VectorSource> | null = null
+const interactionKeys: EventsKey[] = []
 
 const defaultStyle = new Style({
   image: new CircleStyle({
@@ -149,6 +160,58 @@ function updateVectorLayer(geojson: GeoJSONFeatureCollection | null) {
   applyFeatureStyle()
 }
 
+function getFeatureProperties(feature: Feature<Geometry>) {
+  const properties = { ...feature.getProperties() }
+  delete properties.geometry
+  return properties as Record<string, string | number | boolean | null>
+}
+
+function bindMapInteractions() {
+  if (!map || !vectorLayer) {
+    return
+  }
+
+  interactionKeys.push(
+    listen(map, 'singleclick', (event) => {
+      const mapEvent = event as MapBrowserEvent<PointerEvent>
+      const feature = map?.forEachFeatureAtPixel(mapEvent.pixel, (item) => item, {
+        layerFilter: (layer) => layer === vectorLayer,
+      })
+
+      if (!feature) {
+        emit('feature-select', null)
+        return
+      }
+
+      emit('feature-select', {
+        properties: getFeatureProperties(feature as Feature<Geometry>),
+        pixel: [mapEvent.pixel[0], mapEvent.pixel[1]],
+      })
+    }),
+  )
+
+  interactionKeys.push(
+    listen(map, 'pointermove', (event) => {
+      const mapEvent = event as MapBrowserEvent<PointerEvent>
+
+      if (!map) {
+        return
+      }
+
+      const hit = map.hasFeatureAtPixel(mapEvent.pixel, {
+        layerFilter: (layer) => layer === vectorLayer,
+      })
+
+      map.getTargetElement().style.cursor = hit ? 'pointer' : ''
+    }),
+  )
+}
+
+function unbindMapInteractions() {
+  interactionKeys.forEach(unlistenByKey)
+  interactionKeys.length = 0
+}
+
 watch(
   () => props.geojson,
   (geojson) => updateVectorLayer(geojson),
@@ -191,9 +254,11 @@ onMounted(() => {
 
   applyLayerSettings()
   updateVectorLayer(props.geojson)
+  bindMapInteractions()
 })
 
 onUnmounted(() => {
+  unbindMapInteractions()
   map?.setTarget(undefined)
   map = null
   vectorLayer = null

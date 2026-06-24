@@ -98,3 +98,43 @@ body,
     flex: 1;
   }
 }
+
+.feature-popup {
+  position: absolute;
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  max-height: 320px;
+  overflow: auto;
+  pointer-events: all;
+  transform: translate(12px, -50%);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__key {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  &__value {
+    text-align: right;
+    word-break: break-word;
+  }
+}

@@ -4,9 +4,11 @@ import MapView from './components/MapView.vue'
 import DropZone from './components/DropZone.vue'
 import LayerPanel from './components/LayerPanel.vue'
 import AnalyticsPanel from './components/AnalyticsPanel.vue'
+import FeaturePopup from './components/FeaturePopup.vue'
 import { uploadCsv } from './api/upload'
 import type { GeoJSONFeatureCollection } from './types/geojson'
 import type { StyleConfig } from './types/style'
+import type { SelectedFeature } from './types/feature'
 import { getNumericProperties } from './utils/geojson'
 
 const geojson = ref<GeoJSONFeatureCollection | null>(null)
@@ -14,6 +16,7 @@ const layerName = ref('')
 const layerVisible = ref(true)
 const layerOpacity = ref(1)
 const styleConfig = ref<StyleConfig | null>(null)
+const selectedFeature = ref<SelectedFeature | null>(null)
 const loading = ref(false)
 const snackbar = ref(false)
 const snackbarMessage = ref('')
@@ -43,6 +46,8 @@ function initStyleConfig(data: GeoJSONFeatureCollection) {
 }
 
 watch(geojson, (data) => {
+  selectedFeature.value = null
+
   if (!data) {
     styleConfig.value = null
     return
@@ -59,6 +64,7 @@ async function handleFileUpload(file: File) {
   }
 
   loading.value = true
+  selectedFeature.value = null
 
   try {
     geojson.value = await uploadCsv(file)
@@ -83,6 +89,7 @@ async function handleFileUpload(file: File) {
         :style-config="styleConfig"
         :visible="layerVisible"
         :opacity="layerOpacity"
+        @feature-select="selectedFeature = $event"
       />
 
       <DropZone
@@ -104,6 +111,12 @@ async function handleFileUpload(file: File) {
         v-if="geojson && styleConfig && hasNumericProperties"
         v-model="styleConfig"
         :geojson="geojson"
+      />
+
+      <FeaturePopup
+        v-if="selectedFeature"
+        :feature="selectedFeature"
+        @close="selectedFeature = null"
       />
     </div>
 
