@@ -56,7 +56,7 @@ function rowsToFeatureCollection(rows) {
       type: 'Feature',
       geometry: {
         type: 'Point',
-        coordinates: [lat, lng],
+        coordinates: [lng, lat],
       },
       properties,
     };
