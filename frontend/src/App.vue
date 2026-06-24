@@ -1,18 +1,55 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import MapView from './components/MapView.vue'
 import DropZone from './components/DropZone.vue'
 import LayerPanel from './components/LayerPanel.vue'
+import AnalyticsPanel from './components/AnalyticsPanel.vue'
 import { uploadCsv } from './api/upload'
 import type { GeoJSONFeatureCollection } from './types/geojson'
+import type { StyleConfig } from './types/style'
+import { getNumericProperties } from './utils/geojson'
 
 const geojson = ref<GeoJSONFeatureCollection | null>(null)
 const layerName = ref('')
 const layerVisible = ref(true)
 const layerOpacity = ref(1)
+const styleConfig = ref<StyleConfig | null>(null)
 const loading = ref(false)
 const snackbar = ref(false)
 const snackbarMessage = ref('')
+
+const hasNumericProperties = computed(() => {
+  if (!geojson.value) {
+    return false
+  }
+
+  return getNumericProperties(geojson.value).length > 0
+})
+
+function initStyleConfig(data: GeoJSONFeatureCollection) {
+  const properties = getNumericProperties(data)
+
+  if (properties.length === 0) {
+    styleConfig.value = null
+    return
+  }
+
+  styleConfig.value = {
+    property: properties[0],
+    intervals: 5,
+    startColor: '#2196F3',
+    endColor: '#F44336',
+  }
+}
+
+watch(geojson, (data) => {
+  if (!data) {
+    styleConfig.value = null
+    return
+  }
+
+  initStyleConfig(data)
+})
 
 async function handleFileUpload(file: File) {
   if (!file.name.toLowerCase().endsWith('.csv')) {
@@ -28,6 +65,7 @@ async function handleFileUpload(file: File) {
     layerName.value = file.name
     layerVisible.value = true
     layerOpacity.value = 1
+    initStyleConfig(geojson.value)
   } catch (error) {
     snackbarMessage.value = error instanceof Error ? error.message : 'Upload failed'
     snackbar.value = true
@@ -42,6 +80,7 @@ async function handleFileUpload(file: File) {
     <div class="app-map">
       <MapView
         :geojson="geojson"
+        :style-config="styleConfig"
         :visible="layerVisible"
         :opacity="layerOpacity"
       />
@@ -59,6 +98,12 @@ async function handleFileUpload(file: File) {
         @update:visible="layerVisible = $event"
         @update:opacity="layerOpacity = $event"
         @replace-file="handleFileUpload"
+      />
+
+      <AnalyticsPanel
+        v-if="geojson && styleConfig && hasNumericProperties"
+        v-model="styleConfig"
+        :geojson="geojson"
       />
     </div>
 

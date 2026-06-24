@@ -59,3 +59,42 @@ body,
     word-break: break-word;
   }
 }
+
+.analytics-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  width: 300px;
+
+  &__colors {
+    display: flex;
+    gap: 16px;
+  }
+
+  &__color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    input[type='color'] {
+      width: 100%;
+      height: 36px;
+      padding: 0;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  }
+
+  &__gradient {
+    display: flex;
+    overflow: hidden;
+    height: 16px;
+    border-radius: 8px;
+  }
+
+  &__gradient-step {
+    flex: 1;
+  }
+}

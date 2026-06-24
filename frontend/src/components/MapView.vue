@@ -10,11 +10,14 @@ import GeoJSON from 'ol/format/GeoJSON'
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
 import { fromLonLat } from 'ol/proj'
 import type { GeoJSONFeatureCollection } from '../types/geojson'
+import type { StyleConfig } from '../types/style'
+import { getIntervalColor } from '../utils/colorScale'
 import 'ol/ol.css'
 
 const props = withDefaults(
   defineProps<{
     geojson: GeoJSONFeatureCollection | null
+    styleConfig: StyleConfig | null
     visible?: boolean
     opacity?: number
   }>(),
@@ -43,6 +46,74 @@ function applyLayerSettings() {
 
   vectorLayer.setVisible(props.visible)
   vectorLayer.setOpacity(props.opacity)
+}
+
+function getPropertyRange(property: string) {
+  const source = vectorLayer?.getSource()
+  if (!source) {
+    return null
+  }
+
+  const values = source
+    .getFeatures()
+    .map((feature) => Number(feature.get(property)))
+    .filter((value) => !Number.isNaN(value))
+
+  if (values.length === 0) {
+    return null
+  }
+
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values),
+  }
+}
+
+function applyFeatureStyle() {
+  if (!vectorLayer) {
+    return
+  }
+
+  const config = props.styleConfig
+  if (!config) {
+    vectorLayer.setStyle(defaultStyle)
+    vectorLayer.changed()
+    return
+  }
+
+  const range = getPropertyRange(config.property)
+  if (!range) {
+    vectorLayer.setStyle(defaultStyle)
+    vectorLayer.changed()
+    return
+  }
+
+  vectorLayer.setStyle((feature) => {
+    const value = Number(feature.get(config.property))
+
+    if (Number.isNaN(value)) {
+      return defaultStyle
+    }
+
+    const fillColor = getIntervalColor(
+      value,
+      range.min,
+      range.max,
+      config.intervals,
+      config.startColor,
+      config.endColor,
+    )
+
+    return new Style({
+      image: new CircleStyle({
+        radius: 6,
+        fill: new Fill({ color: fillColor }),
+        stroke: new Stroke({ color: '#ffffff', width: 2 }),
+      }),
+    })
+  })
+
+  vectorLayer.changed()
 }
 
 function updateVectorLayer(geojson: GeoJSONFeatureCollection | null) {
@@ -74,11 +145,19 @@ function updateVectorLayer(geojson: GeoJSONFeatureCollection | null) {
       map.getView().fit(extent, { padding: [40, 40, 40, 40], maxZoom: 14 })
     }
   }
+
+  applyFeatureStyle()
 }
 
 watch(
   () => props.geojson,
   (geojson) => updateVectorLayer(geojson),
+)
+
+watch(
+  () => props.styleConfig,
+  () => applyFeatureStyle(),
+  { deep: true },
 )
 
 watch(
