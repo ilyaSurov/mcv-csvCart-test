@@ -12,9 +12,17 @@ import { fromLonLat } from 'ol/proj'
 import type { GeoJSONFeatureCollection } from '../types/geojson'
 import 'ol/ol.css'
 
-const props = defineProps<{
-  geojson: GeoJSONFeatureCollection | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    geojson: GeoJSONFeatureCollection | null
+    visible?: boolean
+    opacity?: number
+  }>(),
+  {
+    visible: true,
+    opacity: 1,
+  },
+)
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: Map | null = null
@@ -27,6 +35,15 @@ const defaultStyle = new Style({
     stroke: new Stroke({ color: '#ffffff', width: 2 }),
   }),
 })
+
+function applyLayerSettings() {
+  if (!vectorLayer) {
+    return
+  }
+
+  vectorLayer.setVisible(props.visible)
+  vectorLayer.setOpacity(props.opacity)
+}
 
 function updateVectorLayer(geojson: GeoJSONFeatureCollection | null) {
   if (!vectorLayer) {
@@ -64,6 +81,11 @@ watch(
   (geojson) => updateVectorLayer(geojson),
 )
 
+watch(
+  () => [props.visible, props.opacity] as const,
+  () => applyLayerSettings(),
+)
+
 onMounted(() => {
   if (!mapContainer.value) {
     return
@@ -88,6 +110,7 @@ onMounted(() => {
     }),
   })
 
+  applyLayerSettings()
   updateVectorLayer(props.geojson)
 })
 
