@@ -7,4 +7,10 @@ export default defineConfig({
     vue(),
     vuetify({ autoImport: true }),
   ],
+  server: {
+    proxy: {
+      '/upload': 'http://localhost:3000',
+      '/health': 'http://localhost:3000',
+    },
+  },
 })

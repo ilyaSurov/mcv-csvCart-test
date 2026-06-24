@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+const emit = defineEmits<{
+  'file-drop': [file: File]
+}>()
+
 const isDragging = ref(false)
 
 function onDragOver(event: DragEvent) {
@@ -15,6 +19,13 @@ function onDragLeave() {
 function onDrop(event: DragEvent) {
   event.preventDefault()
   isDragging.value = false
+
+  const file = event.dataTransfer?.files.item(0)
+  if (!file) {
+    return
+  }
+
+  emit('file-drop', file)
 }
 </script>
 
